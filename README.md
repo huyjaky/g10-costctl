@@ -278,11 +278,11 @@ Add a `REFLECTIONS.md` to your repo. Sample prompts:
 - [x] (optional stretch) `clean` → `pytest tests/test_clean.py` green; or `idle` / `migrate-gp3`
 - [x] `make test` final score reported in README (e.g. "21/25 passing")
 - [x] Replace `sample_output/*_example.txt` with real outputs from your account
-- [ ] `REFLECTIONS.md` with 2+ answers
+- [x] `REFLECTIONS.md` with 2+ answers
 - [x] At least 3 meaningful commits (init → first command working → final polish)
 - [x] Replace `g<N>` placeholders throughout README with your real group number
 - [x] Add Team section with member names
-- [ ] Tag: `git tag w6-sidechallenge-v1 && git push --tags`
+- [x] Tag: `git tag w6-sidechallenge-v1 && git push --tags`
 - [ ] Post link in Slack `#w6-sidechallenge` thread:
       `G<N> — <repo-url> — implemented: list, cost, terminate (21/25 tests passing)`
 
