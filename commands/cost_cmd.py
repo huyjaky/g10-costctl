@@ -55,6 +55,7 @@ Output should match within a few cents.
 import boto3
 from collections import defaultdict
 from datetime import date, timedelta
+from botocore.exceptions import ClientError
 
 from commands._common import parse_kv
 
@@ -66,4 +67,45 @@ def run(args):
         args.tag   — "key=value" string (REQUIRED)
         args.days  — int, default 7
     """
-    raise NotImplementedError("TODO: implement cost — see module docstring")
+    tag_key, tag_val = parse_kv(args.tag)
+    
+    # Calculate Date Range:
+    # End date (exclusive in ce.get_cost_and_usage) is today
+    end_date = date.today()
+    start_date = end_date - timedelta(days=args.days)
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+    
+    ce = boto3.client("ce")
+    try:
+        resp = ce.get_cost_and_usage(
+            TimePeriod={"Start": start_str, "End": end_str},
+            Granularity="DAILY",
+            Metrics=["UnblendedCost"],
+            Filter={"Tags": {"Key": tag_key, "Values": [tag_val]}},
+            GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}],
+        )
+    except ClientError as e:
+        code = e.response["Error"]["Code"]
+        msg = e.response["Error"]["Message"]
+        print(f"AWS error [{code}]: {msg}")
+        return
+
+    services_cost = defaultdict(float)
+    total_cost = 0.0
+    for day in resp.get("ResultsByTime", []):
+        for group in day.get("Groups", []):
+            service = group["Keys"][0]
+            amount = float(group["Metrics"]["UnblendedCost"]["Amount"])
+            services_cost[service] += amount
+            total_cost += amount
+
+    sorted_services = sorted(services_cost.items(), key=lambda x: x[1], reverse=True)
+
+    print(f"Cost for {args.tag} over last {args.days} days ({start_str} → {end_str}):")
+    print("-" * 60)
+    for service, cost in sorted_services:
+        print(f"  {service:<45} ${cost:>8.2f}")
+    print("-" * 60)
+    print(f"  {'TOTAL':<45} ${total_cost:>8.2f}")

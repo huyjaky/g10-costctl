@@ -43,29 +43,54 @@ USEFUL COMBO
       --set Application=HealthBot
 """
 import boto3
+from botocore.exceptions import ClientError
 
 from commands._common import parse_kv
 
 
 def _to_tags(set_args):
     """Convert ['k1=v1', 'k2=v2'] to [{'Key':'k1','Value':'v1'}, ...]."""
-    raise NotImplementedError("TODO: implement _to_tags using parse_kv")
+    tags = []
+    for s in set_args:
+        k, v = parse_kv(s)
+        tags.append({"Key": k, "Value": v})
+    return tags
 
 
 def _tag_ec2(rid, tags):
-    raise NotImplementedError("TODO: implement _tag_ec2 using create_tags")
+    ec2 = boto3.client("ec2")
+    ec2.create_tags(Resources=[rid], Tags=tags)
 
 
 def _tag_rds(rid, tags):
-    raise NotImplementedError("TODO: implement _tag_rds — remember to fetch ARN first")
+    rds = boto3.client("rds")
+    # Fetch ARN first
+    db = rds.describe_db_instances(DBInstanceIdentifier=rid)["DBInstances"][0]
+    arn = db["DBInstanceArn"]
+    rds.add_tags_to_resource(ResourceName=arn, Tags=tags)
 
 
 def _tag_s3(rid, tags):
-    raise NotImplementedError("TODO: implement _tag_s3 — MERGE with existing tags, don't replace")
+    s3 = boto3.client("s3")
+    try:
+        existing_resp = s3.get_bucket_tagging(Bucket=rid)
+        existing_tags = existing_resp.get("TagSet", [])
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchTagSet", "NoSuchBucketTagging", "NoSuchBucket"):
+            existing_tags = []
+        else:
+            raise
+    # Merge existing and new tags
+    tags_dict = {t["Key"]: t["Value"] for t in existing_tags}
+    for t in tags:
+        tags_dict[t["Key"]] = t["Value"]
+    merged_tags = [{"Key": k, "Value": v} for k, v in tags_dict.items()]
+    s3.put_bucket_tagging(Bucket=rid, Tagging={"TagSet": merged_tags})
 
 
 def _tag_volume(rid, tags):
-    raise NotImplementedError("TODO: implement _tag_volume using create_tags")
+    ec2 = boto3.client("ec2")
+    ec2.create_tags(Resources=[rid], Tags=tags)
 
 
 DISPATCH = {
@@ -84,4 +109,11 @@ def run(args):
         args.id    — resource identifier
         args.set   — list[str], each "key=value"
     """
-    raise NotImplementedError("TODO: implement run() — see module docstring")
+    tags = _to_tags(args.set)
+    try:
+        DISPATCH[args.type](args.id, tags)
+        print(f"Applied {len(tags)} tag(s) to {args.type} {args.id}: {', '.join(args.set)}")
+    except ClientError as e:
+        code = e.response["Error"]["Code"]
+        msg = e.response["Error"]["Message"]
+        print(f"AWS error [{code}]: {msg}")

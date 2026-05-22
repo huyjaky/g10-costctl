@@ -28,6 +28,8 @@ HELPERS YOU CAN USE
 -------------------
 From commands._common:
   parse_kv(s) -> (k, v)
+  tags_to_dict(items) -> dict
+  tags_match(tags, want, missing) -> bool
 
 AWS APIS YOU'LL NEED
 --------------------
@@ -41,12 +43,38 @@ VERIFY
 """
 import boto3
 
-from commands._common import parse_kv
+from commands._common import parse_kv, tags_to_dict, tags_match
 
 
 def _find_targets(tag_key, tag_val):
     """Return {"ec2": [...], "volume": [...]} matching tag in non-terminal state."""
-    raise NotImplementedError("TODO: implement _find_targets — see test_clean.py")
+    ec2 = boto3.client("ec2")
+    targets = {"ec2": [], "volume": []}
+    
+    # 1. Find non-terminal EC2 instances
+    paginator_ec2 = ec2.get_paginator("describe_instances")
+    for page in paginator_ec2.paginate():
+        for reservation in page.get("Reservations", []):
+            for instance in reservation.get("Instances", []):
+                iid = instance["InstanceId"]
+                state = instance["State"]["Name"]
+                tags = tags_to_dict(instance.get("Tags", []))
+                if tags_match(tags, [(tag_key, tag_val)], []):
+                    if state not in ("terminated", "shutting-down"):
+                        targets["ec2"].append(iid)
+                        
+    # 2. Find available EBS volumes
+    paginator_vol = ec2.get_paginator("describe_volumes")
+    for page in paginator_vol.paginate():
+        for vol in page.get("Volumes", []):
+            vid = vol["VolumeId"]
+            state = vol["State"]
+            tags = tags_to_dict(vol.get("Tags", []))
+            if tags_match(tags, [(tag_key, tag_val)], []):
+                if state == "available":
+                    targets["volume"].append(vid)
+                    
+    return targets
 
 
 def run(args):
@@ -56,4 +84,22 @@ def run(args):
         args.tag    — "key=value" string (REQUIRED)
         args.apply  — bool, must be True to actually delete (default False = dry-run)
     """
-    raise NotImplementedError("TODO: implement run() — see module docstring")
+    tag_key, tag_val = parse_kv(args.tag)
+    targets = _find_targets(tag_key, tag_val)
+    
+    if not targets["ec2"] and not targets["volume"]:
+        print("Nothing to clean.")
+        return
+        
+    if not args.apply:
+        print(f"Would terminate {len(targets['ec2'])} EC2 instance(s) and delete {len(targets['volume'])} EBS volume(s).")
+        print(f"(dry-run — pass --apply to clean resources)")
+    else:
+        ec2 = boto3.client("ec2")
+        if targets["ec2"]:
+            ec2.terminate_instances(InstanceIds=targets["ec2"])
+            print(f"Terminated EC2 instance(s): {', '.join(targets['ec2'])}")
+        if targets["volume"]:
+            for vid in targets["volume"]:
+                ec2.delete_volume(VolumeId=vid)
+            print(f"Deleted EBS volume(s): {', '.join(targets['volume'])}")
