@@ -1,0 +1,3 @@
+RDS — 1 found:
+------------------------------------------------------------------------------
+  webapp-group10-database   db.t3.micro    available     Environment=Production, Owner=hungqt, CostCenter=G10, Application=AIRagChatbot, Name=webapp-group10-database

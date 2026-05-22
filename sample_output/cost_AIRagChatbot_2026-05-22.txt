@@ -1,0 +1,10 @@
+Cost for Application=AIRagChatbot over last 7 days (2026-05-15 → 2026-05-22):
+------------------------------------------------------------
+  EC2 - Other                                   $    0.93
+  Amazon Elastic Load Balancing                 $    0.23
+  Amazon Simple Storage Service                 $    0.00
+  Amazon CloudFront                             $    0.00
+  AWS Certificate Manager                       $    0.00
+  Amazon Elastic Compute Cloud - Compute        $    0.00
+------------------------------------------------------------
+  TOTAL                                         $    1.16
