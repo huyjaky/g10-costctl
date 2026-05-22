@@ -1,0 +1,4 @@
+EC2 missing-Application — 2 found:
+------------------------------------------------------------------------------
+  i-060bcdeddede08f21       t2.nano        running       Environment=Development, Name=test-for-costctl-4
+  i-0387b8e50c649cf3d       t2.nano        running       Name=test-for-costctl-1

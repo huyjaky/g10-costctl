@@ -1,0 +1,6 @@
+EC2 — 4 found:
+------------------------------------------------------------------------------
+  i-060bcdeddede08f21       t2.nano        running       Environment=Development, Name=test-for-costctl-4
+  i-01d928d1c3b81739f       t2.nano        running       Owner=hungqt, Environment=Development, Name=test-for-costctl-3, Application=AIRagChatbot
+  i-01d42b10ebff3729b       t2.nano        running       Application=AIRagChatbot, Name=test-for-costctl-2, Environment=Production, Owner=hungqt
+  i-0387b8e50c649cf3d       t2.nano        running       Name=test-for-costctl-1

@@ -1,0 +1,11 @@
+# terminate ec2
+Terminate EC2 instance i-01d928d1c3b81739f? [y/N] y
+Terminated EC2 i-01d928d1c3b81739f
+
+# listing evidence by command "list ec2"
+EC2 — 4 found:
+------------------------------------------------------------------------------
+  i-060bcdeddede08f21       t2.nano        running       Environment=Development, Name=test-for-costctl-4
+  i-01d928d1c3b81739f       t2.nano        terminated    Environment=Development, Name=test-for-costctl-3, Application=AIRagChatbot, Owner=duckq1
+  i-01d42b10ebff3729b       t2.nano        running       Application=AIRagChatbot, Name=test-for-costctl-2, Environment=Production, Owner=hungqt
+  i-0387b8e50c649cf3d       t2.nano        running       Name=test-for-costctl-1
